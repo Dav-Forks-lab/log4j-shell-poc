@@ -9,6 +9,13 @@ Proof-of-concept (POC)
 
 As a PoC there is a python file that automates the process. 
 
+#### Create & activate Python Virtual Environment
+```bash
+python3 -m venv .venv --prompt log4shell
+
+source .venv/bin/activate
+```
+
 #### Requirements:
 ```bash
 pip install -r requirements.txt

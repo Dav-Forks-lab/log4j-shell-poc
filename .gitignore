@@ -1,2 +1,8 @@
+# python virtual environment
+.venv
+
+# jdk
 jdk1.8.0_20/
+
+# written exploit file
 Exploit.*
