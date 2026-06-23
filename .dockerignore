@@ -1,0 +1,6 @@
+.venv
+.git
+vulnerable-application
+jdk1.8.0_171
+__pycache__
+*.pyc

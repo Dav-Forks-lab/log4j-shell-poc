@@ -2,7 +2,8 @@
 .venv
 
 # jdk
-jdk1.8.0_20/
+jdk1.8.0_*
+jre1.8.0_*
 
 # written exploit file
 Exploit.*

